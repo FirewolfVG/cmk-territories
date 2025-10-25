@@ -473,7 +473,8 @@ function updateCountdowns() {
 
             if (timeLeft <= 0) {
                 countdownElement.textContent = '¡Tiempo agotado!';
-                countdownElement.classList.remove('red'); // Quitar la clase roja si expiró
+                countdownElement.classList.add('red'); // Expiró el contador
+                document.body.classList.add('red');
                 return;
             }
 

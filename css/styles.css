@@ -16,6 +16,8 @@
             /* Rojos para acciones negativas/alertas */
             --red-alert: #FF4D4F; /* Rojo vibrante */
             --red-hover: #D32F2F; /* Rojo más oscuro al pasar el mouse */
+            --red-expired-bg: #8B0000; /* Rojo oscuro para graffitis expirados */
+
 
             /* Otros */
             --text-light: #E0E0E0; /* Texto general claro */
@@ -237,12 +239,21 @@
             min-width: 280px;
             box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
             position: relative;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
         }
         .graffiti-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
         }
+        /* Nuevo estilo para graffiti expirado */
+        .graffiti-item.expired {
+            background-color: var(--red-expired-bg);
+            border-color: var(--red-alert);
+        }
+        .graffiti-item.expired .countdown {
+            color: var(--text-light); /* Para que el texto de "agotado" se vea bien */
+        }
+
         .graffiti-item p {
             margin: 0;
             font-size: 0.95em;
@@ -349,77 +360,151 @@
         }
 
         /* ---------------------------
-           STYLES ADDED: LOGIN OVERLAY
-           (Aislados del resto — mínimos)
+           STYLES MODIFIED: LOGIN OVERLAY
            --------------------------- */
         #loginOverlay {
             position: fixed;
-            inset: 0;
-            background-image: url('CMK.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: repeat;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh; /* Ocupa toda la altura de la pantalla */
+            background-image: url('CMK.png'); /* Asegúrate de que esta imagen exista */
+            background-size: auto;
+            background-position: right;
+            background-repeat: no-repeat; /* Para que no se repita si la imagen es pequeña */
             display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            z-index: 9999; /* por encima de todo */
-            /* capa oscura para legibilidad */
-            background-color: rgba(0,0,0,0.90);
-            backdrop-filter: blur(4px);
+            align-items: center; /* Centra verticalmente */
+            justify-content: center; /* Centra horizontalmente */
+            z-index: 9999;
+            background-color: rgba(0,0,0,0.6); /* Capa oscura más sutil */
+            backdrop-filter: blur(9px); /* Más desenfoque para el fondo */
+            -webkit-backdrop-filter: blur(8px);
         }
+
+ 
+          
         #loginBox {
-            background: rgba(0,0,0,0.65);
-            padding: 26px;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-            min-width: 320px;
-            max-width: 420px;
+            background: rgba(var(--bg-dark-rgb, 18, 10, 31), 0.9); /* Fondo más opaco del dark violet */
+            padding: 35px 40px; /* Más padding */
+            border-radius: 16px;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.8); /* Sombra más pronunciada */
+            min-width: 380px; /* Ancho mínimo un poco mayor */
+            max-width: 480px;
             width: 90%;
             color: var(--text-light);
-            border: 1px solid rgba(255,255,255,0.06);
+            border: 1px solid var(--violet-primary); /* Borde más visible */
+            text-align: center; /* Centrar el contenido del login box */
+            transform: translateY(-20px); /* Ligeramente más arriba */
+            animation: fadeInScale 0.4s ease-out forwards; /* Animación de entrada */
+        }
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(-20px) scale(1);
+            }
         }
         #loginBox h3 {
-            margin: 0 0 12px 0;
-            font-size: 1.4em;
-            color: var(--violet-secondary);
+            margin: 0 0 25px 0;
+            font-size: 2em; /* Título más grande */
+            color: var(--violet-primary);
+            text-shadow: 0 0 10px rgba(var(--violet-primary-rgb, 138, 43, 226), 0.5);
         }
         #loginBox .login-row {
             display:flex;
             flex-direction:column;
-            gap:10px;
-            margin-bottom: 10px;
+            gap:15px; /* Más espacio entre elementos */
+            margin-bottom: 20px;
+        }
+        #loginBox label {
+            text-align: left; /* Alinear labels a la izquierda */
+            font-weight: 600;
+            color: var(--violet-secondary);
+            font-size: 1.1em;
+            margin-bottom: 4px; /* Pequeño espacio debajo del label */
         }
         #loginBox input[type="text"],
         #loginBox input[type="password"] {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(255,255,255,0.03);
+            padding: 14px 18px; /* Más padding */
+            border-radius: 10px; /* Bordes más redondeados */
+            border: 1px solid var(--violet-border);
+            background: var(--input-bg);
             color: var(--text-light);
-            font-size: 1em;
+            font-size: 1.1em;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #loginBox input[type="text"]:focus,
+        #loginBox input[type="password"]:focus {
+            outline: none;
+            border-color: var(--violet-primary);
+            box-shadow: 0 0 12px rgba(var(--violet-primary-rgb, 138, 43, 226), 0.8), inset 0 2px 5px rgba(0,0,0,0.3);
         }
         #loginBox .login-actions{
             display:flex;
-            gap:10px;
-            justify-content: flex-end;
-            margin-top:6px;
+            gap:15px;
+            justify-content: center; /* Centrar el botón de login */
+            margin-top: 25px;
+        }
+        #loginBtn {
+            padding: 15px 40px; /* Botón más grande */
+            font-size: 1.2em;
+            letter-spacing: 1px;
+            background-color: var(--green-accent); /* Usar verde para el botón de login */
+            color: var(--bg-dark); /* Texto oscuro en botón verde */
+            font-weight: bold;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+        #loginBtn:hover:not(:disabled) {
+            background-color: var(--green-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         }
         #loginError {
-            color: #ff8a80;
-            font-size: 0.95em;
-            min-height: 18px;
+            color: var(--red-alert);
+            font-size: 1em;
+            min-height: 20px;
+            margin-top: 10px;
+        }
+        /* Shake animation for login error */
+        #loginBox.shake {
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translateX(0);
+        }
+        @keyframes shake {
+            10%, 90% { transform: translateX(-8px) translateY(-20px); }
+            20%, 80% { transform: translateX(8px) translateY(-20px); }
+            30%, 70% { transform: translateX(-8px) translateY(-20px); }
+            40%, 60% { transform: translateX(8px) translateY(-20px); }
+            50% { transform: translateX(-8px) translateY(-20px); }
         }
 
         /* Small logout button appended dynamically (minimal footprint) */
         #logoutBtn {
             position: fixed;
-            top: 14px;
-            right: 14px;
+            top: 18px; /* Ajustado para estar más centrado */
+            right: 18px;
             z-index: 2000;
-            padding: 8px 12px;
+            padding: 10px 15px; /* Un poco más grande */
             border-radius: 8px;
             border: none;
             font-weight: 600;
             cursor: pointer;
             display: none; /* se muestra sólo si logueado */
+            background-color: var(--gray-cancel);
+            color: var(--text-light);
+            font-size: 0.9em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        #logoutBtn:hover {
+            background-color: var(--gray-cancel-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.4);
+        }
+        /* Definir variable RGB para bg-dark */
+        body {
+            --bg-dark-rgb: 18, 10, 31;
         }
