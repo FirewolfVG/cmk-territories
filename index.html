@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Territorios CMK</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- LOGIN OVERLAY (Mantener o quitar según tu decisión anterior) -->
+  <div id="loginOverlay" aria-hidden="true" style="display:none;">
+    <div id="loginBox" role="dialog" aria-label="Login CMK">
+      <h3>Acceso - CMK</h3>
+      <div class="login-row">
+        <label for="loginUser" style="font-size:0.95em;color:var(--text-medium);">Usuario</label>
+        <input id="loginUser" type="text" autocomplete="username" value="" placeholder="Usuario">
+        <label for="loginPass" style="font-size:0.95em;color:var(--text-medium);">Contraseña</label>
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="Contraseña">
+        <div id="loginError" aria-live="polite"></div>
+      </div>
+      <div class="login-actions">
+        <button id="loginBtn">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN DE LOGOUT (Mantener o quitar según tu decisión anterior) -->
+  <button id="logoutBtn" title="Cerrar sesión">Cerrar sesión</button>
+
+
+  <div class="container">
+    <h1>
+      Control de Territorios CMK
+      <span id="currentDateTime">Hora de Argentina: </span>
+    </h1>
+
+    <h2>Territorios</h2>
+    <div class="input-row">
+      <div class="input-group">
+        <label for="newTerritoryName">Nombre del nuevo territorio:</label>
+        <input type="text" id="newTerritoryName" placeholder="Ej: Zona Norte" maxlength="15">
+        <button class="add-territory-btn" onclick="addTerritory()">Agregar Territorio</button>
+      </div>
+      <div class="input-group">
+        <label for="graffitiDuration">Duración del Grafiti (horas):</label>
+        <input type="number" id="graffitiDuration" value="144" min="1" style="width: 150px;">
+      </div>
+    </div>
+
+    <div id="territoriesList"></div>
+  </div>
+
+  <footer class="footer">
+    Creado por GreppiVG, para la CMK.
+  </footer>
+
+  <!-- Mueve TODOS los scripts aquí, justo antes del cierre del </body> -->
+  <!-- Es CRÍTICO que la librería de Supabase CDN esté ANTES que tus scripts que la usan -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/app.js" defer></script> <!-- Añade 'defer' -->
+  <script src="js/login.js" defer></script> <!-- Añade 'defer' -->
+</body>
+</html>

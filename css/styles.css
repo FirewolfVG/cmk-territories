@@ -1,0 +1,425 @@
+:root {
+            /* Colores Base */
+            --bg-dark: #120A1F; /* Fondo muy oscuro, casi negro con un toque violeta */
+            --bg-medium: #1F0F3D; /* Fondo de contenedores principales, violeta oscuro */
+            --bg-light: #2D1A50; /* Fondo de tarjetas de graffiti, violeta medio */
+            
+            /* Violetas */
+            --violet-primary: #8A2BE2; /* Violeta principal para títulos y acentos */
+            --violet-secondary: #BB86FC; /* Violeta más claro para texto importante */
+            --violet-border: #5C2799; /* Violeta para bordes sutiles */
+
+            /* Verdes para acciones positivas/detalles */
+            --green-accent: #00E676; /* Verde brillante */
+            --green-hover: #00C853; /* Verde más oscuro al pasar el mouse */
+
+            /* Rojos para acciones negativas/alertas */
+            --red-alert: #FF4D4F; /* Rojo vibrante */
+            --red-hover: #D32F2F; /* Rojo más oscuro al pasar el mouse */
+
+            /* Otros */
+            --text-light: #E0E0E0; /* Texto general claro */
+            --text-medium: #BB86FC; /* Texto de detalles, violeta claro */
+            --button-text-dark: #120A1F; /* Texto para botones verdes/amarillos */
+            --input-bg: #3C1E55; /* Fondo para inputs */
+            --input-border: #8A2BE2; /* Borde para inputs */
+            --yellow-edit: #FFA500; /* Amarillo para botones de edición */
+            --yellow-edit-hover: #FFC107;
+            --blue-save: #00BCD4; /* Turquesa para guardar */
+            --blue-save-hover: #00ACC1;
+            --gray-cancel: #616161; /* Gris para cancelar */
+            --gray-cancel-hover: #424242;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-dark);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-light);
+            line-height: 1.6;
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            -webkit-backdrop-filter: blur(8px); /* Más desenfoque para el fondo */
+            backdrop-filter: blur(8px);
+        }
+        .container {
+            max-width: 1250px;
+            margin: 0 auto;
+            background-color: #000000;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--violet-border);
+            -webkit-backdrop-filter: blur(3px); /* Un ligero blur al contenedor */
+            backdrop-filter: blur(3px);
+        }
+        h1 {
+            color: var(--violet-primary);
+            border-bottom: 2px solid var(--violet-border);
+            padding-bottom: 18px;
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 2.8em;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(var(--violet-primary-rgb, 138, 43, 226), 0.4);
+        }
+        h1 span {
+            font-size: 0.4em;
+            color: var(--violet-secondary);
+            font-weight: 400;
+            margin-left: 20px;
+            white-space: nowrap; /* Evita que la fecha se rompa */
+        }
+        h2 {
+            color: var(--violet-secondary);
+            border-bottom: 1px solid var(--violet-border);
+            padding-bottom: 12px;
+            margin-top: 30px;
+            font-size: 1.9em;
+            font-weight: 600;
+        }
+        .input-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap; /* Permitir que los elementos se envuelvan en pantallas pequeñas */
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1; /* Permitir que los grupos crezcan */
+            min-width: 300px; /* Ancho mínimo para cada grupo */
+        }
+        .input-group label {
+            min-width: 120px; /* Ajustado para que quepa bien */
+            font-weight: bold;
+            color: var(--text-medium);
+            font-size: 1.05em;
+        }
+        .input-group input[type="number"],
+        .input-group input[type="text"],
+        .input-group input[type="datetime-local"] {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-light);
+            font-size: 1em;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--violet-primary);
+            box-shadow: 0 0 8px rgba(var(--violet-primary-rgb, 138, 43, 226), 0.6);
+        }
+        .input-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8) sepia(1) saturate(5) hue-rotate(240deg);
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--violet-primary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        button:hover:not(:disabled) {
+            background-color: var(--violet-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        button:disabled {
+            background-color: #4a4a4a;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: translateY(0);
+        }
+
+        /* Estilos específicos de botones */
+        .add-territory-btn {
+            background-color: var(--violet-primary);
+        }
+        .add-territory-btn:hover:not(:disabled) {
+            background-color: var(--violet-secondary);
+        }
+        .add-graffiti-btn {
+            background-color: var(--green-accent);
+            color: var(--button-text-dark);
+        }
+        .add-graffiti-btn:hover:not(:disabled) {
+            background-color: var(--green-hover);
+        }
+        .delete-btn {
+            background-color: var(--red-alert);
+        }
+        .delete-btn:hover:not(:disabled) {
+            background-color: var(--red-hover);
+        }
+        .edit-btn {
+            background-color: var(--yellow-edit);
+            color: var(--button-text-dark);
+        }
+        .edit-btn:hover:not(:disabled) {
+            background-color: var(--yellow-edit-hover);
+        }
+        .save-btn {
+            background-color: var(--blue-save);
+            color: var(--button-text-dark);
+        }
+        .save-btn:hover:not(:disabled) {
+            background-color: var(--blue-save-hover);
+        }
+        .cancel-btn {
+            background-color: var(--gray-cancel);
+        }
+        .cancel-btn:hover:not(:disabled) {
+            background-color: var(--gray-cancel-hover);
+        }
+
+        .territory-item {
+            border: 1px solid var(--violet-border);
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            background-color: rgba(var(--bg-medium-rgb, 31, 15, 61), 0.7);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        .territory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .territory-header h3 {
+            margin: 0;
+            color: var(--violet-primary);
+            flex-grow: 1;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+        .territory-header .edit-name {
+            display: none;
+            gap: 10px;
+        }
+        .territory-graffiti-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px; /* Espacio entre tarjetas */
+            justify-content: center; /* Centrar tarjetas */
+        }
+        .graffiti-item {
+            background-color: rgba(var(--bg-light-rgb, 45, 26, 80), 0.85);
+            border: 1px solid var(--violet-secondary);
+            padding: 18px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 0 0 calc(28.333% - 12px); /* 3 tarjetas por fila con gap de 18px */
+            min-width: 280px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .graffiti-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        .graffiti-item p {
+            margin: 0;
+            font-size: 0.95em;
+            color: var(--text-light);
+        }
+        .graffiti-item strong {
+            color: var(--green-accent);
+            font-weight: 600;
+        }
+        .graffiti-item .countdown {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--violet-secondary);
+            padding-top: 5px;
+            border-top: 1px dashed rgba(var(--violet-border-rgb, 92, 39, 153), 0.5);
+            margin-top: 5px;
+        }
+        .graffiti-item .countdown.red {
+            color: var(--red-alert);
+            font-size: 1.25em;
+        }
+        .graffiti-actions, .edit-graffiti-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+            gap: 8px;
+        }
+        .edit-graffiti-start-time-wrapper {
+            margin-top: 15px;
+        }
+        .edit-graffiti-start-time-wrapper label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            color: var(--violet-secondary);
+        }
+        .edit-graffiti-start-time-wrapper input {
+            width: calc(100% - 24px);
+        }
+        .territory-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Definir variables RGB para los rgba() */
+        body {
+            --bg-medium-rgb: 31, 15, 61;
+            --bg-light-rgb: 45, 26, 80;
+            --violet-primary-rgb: 138, 43, 226;
+            --violet-border-rgb: 92, 39, 153;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid var(--violet-border);
+            text-align: center;
+            color: var(--text-medium);
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 1200px) {
+            .graffiti-item {
+                flex: 0 0 calc(50% - 9px); /* 2 tarjetas por fila */
+            }
+        }
+        @media (max-width: 800px) {
+            .graffiti-item {
+                flex: 0 0 100%; /* 1 tarjeta por fila */
+                min-width: unset;
+            }
+            .input-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+                min-width: unset;
+            }
+            .input-group label {
+                min-width: unset;
+                text-align: left;
+            }
+            .territory-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .territory-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            h1 {
+                font-size: 2em;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            h1 span {
+                margin-top: 5px;
+                margin-left: 0;
+                font-size: 0.6em;
+            }
+        }
+
+        /* ---------------------------
+           STYLES ADDED: LOGIN OVERLAY
+           (Aislados del resto — mínimos)
+           --------------------------- */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background-image: url('CMK.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: repeat;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 9999; /* por encima de todo */
+            /* capa oscura para legibilidad */
+            background-color: rgba(0,0,0,0.90);
+            backdrop-filter: blur(4px);
+        }
+        #loginBox {
+            background: rgba(0,0,0,0.65);
+            padding: 26px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            min-width: 320px;
+            max-width: 420px;
+            width: 90%;
+            color: var(--text-light);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        #loginBox h3 {
+            margin: 0 0 12px 0;
+            font-size: 1.4em;
+            color: var(--violet-secondary);
+        }
+        #loginBox .login-row {
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            margin-bottom: 10px;
+        }
+        #loginBox input[type="text"],
+        #loginBox input[type="password"] {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-light);
+            font-size: 1em;
+        }
+        #loginBox .login-actions{
+            display:flex;
+            gap:10px;
+            justify-content: flex-end;
+            margin-top:6px;
+        }
+        #loginError {
+            color: #ff8a80;
+            font-size: 0.95em;
+            min-height: 18px;
+        }
+
+        /* Small logout button appended dynamically (minimal footprint) */
+        #logoutBtn {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 2000;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: none; /* se muestra sólo si logueado */
+        }
