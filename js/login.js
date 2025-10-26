@@ -9,6 +9,8 @@
             const loginPass = document.getElementById('loginPass');
             const loginError = document.getElementById('loginError');
             const logoutBtn = document.getElementById('logoutBtn');
+            const mainContainer = document.querySelector('.container');
+            const sidebarContainer = document.querySelector('.sidebar-container'); // Nueva: Referencia al contenedor lateral
 
             // Mostrar overlay si no está logueado (sessionStorage para sesión del navegador)
             function isLoggedIn() {
@@ -39,6 +41,11 @@
                 }
             }
 
+            function showMainContent(show) {
+                mainContainer.style.display = show ? 'grid' : 'none'; // Cambiado a 'grid'
+                sidebarContainer.style.display = show ? 'flex' : 'none'; // AÑADE ESTA LÍNEA
+            }
+
             function doLogin() {
                 const u = (loginUser.value || '').trim();
                 const p = (loginPass.value || '').trim();
@@ -48,6 +55,11 @@
                     loginError.textContent = '';
                     showOverlay(false);
                     showLogoutButton(true);
+                    showMainContent(true);
+                    // Llama a la función de inicialización de la app SOLO después del login exitoso
+                    if (typeof window.initializeApp === 'function') {
+                        window.initializeApp();
+                    }
                 } else {
                     loginError.textContent = 'Usuario o contraseña incorrectos.';
                     // pequeño shake visual (clase inline)
@@ -66,8 +78,15 @@
 
             function doLogout(){
                 sessionStorage.removeItem(STORAGE_KEY);
-                // recargar para restablecer estado (puedes cambiar a showOverlay(true) si prefieres)
-                location.reload();
+                // Ocultar contenido principal y mostrar login
+                showMainContent(false);
+                showLogoutButton(false);
+                showOverlay(true);
+                // Limpiar campos de login
+                loginUser.value = '';
+                loginPass.value = '';
+                loginError.textContent = '';
+                // No recargar, solo cambiar visibilidad
             }
 
             // eventos
@@ -89,9 +108,15 @@
                 if (!isLoggedIn()) {
                     showOverlay(true);
                     showLogoutButton(false);
+                    showMainContent(false); // Asegura que el contenido principal y el sidebar están ocultos
                 } else {
                     showOverlay(false);
                     showLogoutButton(true);
+                    showMainContent(true); // Muestra el contenido principal y el sidebar si ya está logueado
+                    // Llama a la función de inicialización de la app si ya está logueado al cargar
+                    if (typeof window.initializeApp === 'function') {
+                        window.initializeApp();
+                    }
                 }
             });
 

@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Territorios CMK</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 </head>
 <body>
 
-  <!-- LOGIN OVERLAY (Mantener o quitar según tu decisión anterior) -->
-  <div id="loginOverlay" aria-hidden="true" style="display:none;">
+  <!-- LOGIN OVERLAY - Ahora visible por defecto, el JS lo ocultará al loguearse -->
+  <div id="loginOverlay" aria-hidden="false" style="display:flex;">
     <div id="loginBox" role="dialog" aria-label="Login CMK">
       <h3>Acceso - CMK</h3>
       <div class="login-row">
@@ -25,41 +27,72 @@
     </div>
   </div>
 
-  <!-- BOTÓN DE LOGOUT (Mantener o quitar según tu decisión anterior) -->
-  <button id="logoutBtn" title="Cerrar sesión">Cerrar sesión</button>
+  <!-- BOTÓN DE LOGOUT - Ahora oculto por defecto -->
+  <button id="logoutBtn" title="Cerrar sesión" style="display:none;">Cerrar sesión</button>
 
-
-  <div class="container">
-    <h1>
-      Control de Territorios CMK
-      <span id="currentDateTime">Hora de Argentina: </span>
-    </h1>
-
-    <h2>Territorios</h2>
-    <div class="input-row">
-      <div class="input-group">
-        <label for="newTerritoryName">Nuevo territorio:</label>
-        <input type="text" id="newTerritoryName" placeholder="Ej: Garage bebotero" maxlength="15">
-        <button class="add-territory-btn" onclick="addTerritory()">Agregar Territorio</button>
+  <!-- CONTENEDOR PRINCIPAL - Ahora oculto por defecto -->
+  <div class="container" style="display:none;">
+    
+    <!-- Nuevo Contenedor de Chat -->
+    <div class="chat-container">
+      <div id="chatMessages" class="chat-messages">
+        <!-- Los mensajes del chat se renderizarán aquí -->
       </div>
-      <div class="input-group">
-        <label for="graffitiDuration">Duración del Grafiti:</label>
-        <input type="number" id="graffitiDuration" value="120" min="1" style="width: 100px;">
-        <label for="graffitiDuration">horas</label>
+      <div class="chat-input-group">
+        <input type="text" id="chatUserName" placeholder="Tu nombre" maxlength="20">
+        <textarea id="chatMessageInput" placeholder="Escribe tu mensaje..." rows="3" maxlength="200"></textarea>
+        <button id="sendChatMessageBtn" class="add-territory-btn">Enviar</button>
       </div>
     </div>
 
-    <div id="territoriesList"></div>
+    <div> <!-- Este div envuelve el contenido original del contenedor principal -->
+      <h1>
+        Control de Territorios CMK
+        <span id="currentDateTime">Hora de Argentina: </span>
+      </h1>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label for="newTerritoryName">Nuevo territorio:</label>
+          <input type="text" id="newTerritoryName" placeholder="Ej: Garage bebotero" maxlength="15">
+          <button class="add-territory-btn" onclick="addTerritory()">Agregar Territorio</button>
+        </div>
+        <div class="input-group">
+          <label for="graffitiDuration">Duración de los Grafitis:</label>
+          <input type="number" id="graffitiDuration" min="1" style="width: 20px;"
+          oninput="if(this.value.length > 3) this.value = this.value.slice(0,3)">
+          <label for="graffitiDuration">horas</label>
+        </div>
+      </div>
+
+      <div id="territoriesList"></div>
+    </div> <!-- Fin del div que envuelve el contenido principal -->
+
+    <!-- Nuevo Contenedor Lateral -->
+    <div class="sidebar-container" style="display:none;">
+      <div class="stats-section">
+
+        <p>Territorios con grafitis: <span id="activeTerritoriesCount">0</span></p>
+        <p>Grafitis activos: <span id="activeGraffitisCount">0</span></p>
+        <p>Grafitis vencidos: <span id="expiredGraffitisCount">0</span></p>
+      </div>
+
+      <div class="upcoming-graffitis-section">
+        <h2>Próximos a Vencer</h2>
+        <ul id="upcomingGraffitisList">
+          <!-- Los próximos grafitis se renderizarán aquí -->
+        </ul>
+        <button id="copyUpcomingBtn" class="save-btn" style="width:100%; margin-top: 15px;">Copiar Lista</button>
+      </div>
+    </div>
   </div>
 
   <footer class="footer">
     Creado por GreppiVG, para la CMK.
   </footer>
 
-  <!-- Mueve TODOS los scripts aquí, justo antes del cierre del </body> -->
-  <!-- Es CRÍTICO que la librería de Supabase CDN esté ANTES que tus scripts que la usan -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/app.js" defer></script> <!-- Añade 'defer' -->
-  <script src="js/login.js" defer></script> <!-- Añade 'defer' -->
+  <script src="js/app.js" defer></script>
+  <script src="js/login.js" defer></script>
 </body>
 </html>

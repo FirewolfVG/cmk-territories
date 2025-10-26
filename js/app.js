@@ -1,31 +1,91 @@
-// --- Supabase Client Initialization ---
-const SUPABASE_URL = 'https://tqysigxqrlydmzbxzxqk.supabase.co'; // ¡REEMPLAZA ESTO!
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxeXNpZ3hxcmx5ZG16Ynh6eHFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMzAwMTQsImV4cCI6MjA3NjkwNjAxNH0.AJKtnWhzwi1vKjCu17JHaKLwzETp8OMiP8UwwSF5uxI'; // ¡REEMPLAZA ESTO!
+const SUPABASE_URL = 'https://tqysigxqrlydmzbxzxqk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxeXNpZ3hxcmx5ZG16Ynh6eHFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMzAwMTQsImV4cCI6MjA3NjkwNjAxNH0.AJKtnWhzwi1vKjCu17JHaKLwzETp8OMiP8UwwSF5uxI';
 
-let supabase; // Declara 'supabase' globalmente, pero no lo inicialices aquí.
+let supabase;
 
-// ------------------------------------------
-
-// Variables globales
-let territories = []; // Ahora se cargará desde Supabase
+let territories = [];
 const graffitiDurationInput = document.getElementById('graffitiDuration');
 const territoriesListDiv = document.getElementById('territoriesList');
 const currentDateTimeSpan = document.getElementById('currentDateTime');
+let globalGraffitiDuration = 120;
 
-// --- Funciones de Utilidad ---
+const activeTerritoriesCountSpan = document.getElementById('activeTerritoriesCount');
+const activeGraffitisCountSpan = document.getElementById('activeGraffitisCount');
+const expiredGraffitisCountSpan = document.getElementById('expiredGraffitisCount');
+const upcomingGraffitisListUl = document.getElementById('upcomingGraffitisList');
+const copyUpcomingBtn = document.getElementById('copyUpcomingBtn');
+const sidebarContainer = document.querySelector('.sidebar-container');
 
-// Función para obtener la hora actual de Argentina (GMT-3) y formatearla
+const chatMessagesDiv = document.getElementById('chatMessages');
+const chatUserNameInput = document.getElementById('chatUserName');
+const chatMessageInput = document.getElementById('chatMessageInput');
+const sendChatMessageBtn = document.getElementById('sendChatMessageBtn');
+
+
+async function fetchGlobalGraffitiDuration() {
+    if (!supabase) {
+        return;
+    }
+
+    const { data, error } = await supabase
+        .from('settings')
+        .select('setting_value')
+        .eq('setting_name', 'graffiti_duration_hours')
+        .single();
+
+    if (error) {
+        globalGraffitiDuration = 120;
+        graffitiDurationInput.value = globalGraffitiDuration;
+        return;
+    }
+
+    if (data && data.setting_value) {
+        const duration = parseInt(data.setting_value);
+        if (!isNaN(duration) && duration > 0) {
+            globalGraffitiDuration = duration;
+            graffitiDurationInput.value = globalGraffitiDuration;
+        } else {
+            globalGraffitiDuration = 120;
+            graffitiDurationInput.value = globalGraffitiDuration;
+        }
+    }
+}
+
+async function saveGlobalGraffitiDuration(newDuration) {
+    if (!supabase) {
+        return { success: false, error: 'client_not_initialized' };
+    }
+
+    try {
+        const payload = {
+            setting_name: 'graffiti_duration_hours',
+            setting_value: String(newDuration)
+        };
+
+        const { data, error } = await supabase
+            .from('settings')
+            .upsert(payload, { onConflict: 'setting_name' })
+            .select();
+
+        if (error) {
+            console.error('Error saving graffiti duration setting (upsert):', error);
+            return { success: false, error };
+        }
+        return { success: true, data };
+    } catch (err) {
+        console.error('Unexpected error in saveGlobalGraffitiDuration:', err);
+        return { success: false, error: err };
+    }
+}
+
 function getArgentineTime() {
     const now = new Date();
-    // Ajustar a UTC primero, luego aplicar el offset de Argentina (-3 horas)
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    return new Date(utc + (3600000 * -3)); // -3 horas para GMT-3
+    return new Date(utc + (3600000 * -3));
 }
 
 function formatDateTime(date) {
-    if (!date) return ''; // Manejar fechas nulas
-    // Asegurarse de que la fecha se formatee como hora local de Argentina si es posible
-    // La conversión a ISOString ya debería tener la zona horaria correcta de Supabase
+    if (!date) return '';
     return new Date(date).toLocaleString('es-AR', {
         year: 'numeric',
         month: '2-digit',
@@ -39,8 +99,8 @@ function formatDateTime(date) {
 }
 
 function formatDateTimeLocal(date) {
-    if (!date) return ''; // Manejar fechas nulas
-    const d = new Date(date); // Asegúrate de que es un objeto Date
+    if (!date) return '';
+    const d = new Date(date);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -49,13 +109,8 @@ function formatDateTimeLocal(date) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-// --- Funciones de Interacción con Supabase ---
-
 async function fetchTerritories() {
-    console.log("Fetching territories...");
-    // Verificar si supabase está inicializado
     if (!supabase) {
-        console.error("Supabase client not initialized. Cannot fetch territories.");
         return [];
     }
 
@@ -67,44 +122,47 @@ async function fetchTerritories() {
                 id, start_time, end_time
             )
         `)
-        .order('created_at', { ascending: true }); // Ordenar por fecha de creación
+        .order('created_at', { ascending: true });
 
     if (error) {
-        console.error('Error fetching territories:', error.message);
         alert('Error al cargar territorios: ' + error.message);
         return [];
     }
 
-    // Adaptar la estructura de datos de Supabase a la esperada por el frontend
     return data.map(territory => ({
         id: territory.id,
         name: territory.name,
-        graffitis: territory.graffitis || [] // Asegurarse de que graffitis sea un array
+        graffitis: territory.graffitis || []
     }));
 }
 
 async function renderTerritories() {
-    territories = await fetchTerritories(); // Cargar los territorios al renderizar
-    territoriesListDiv.innerHTML = ''; // Limpiar la lista antes de renderizar
+    territories = await fetchTerritories();
+    territoriesListDiv.innerHTML = '';
 
-    territories.forEach((territory) => { // Eliminado territoryIndex, ahora usamos territory.id
+    territories.forEach((territory) => {
         const territoryDiv = document.createElement('div');
         territoryDiv.className = 'territory-item';
-        // Usar territory.id en lugar de territoryIndex para identificadores únicos
         territoryDiv.setAttribute('data-id', territory.id);
 
         territoryDiv.innerHTML = `
             <div class="territory-header">
                 <h3 class="display-name">${territory.name}</h3>
-                <div class="edit-name">
+                <div class="edit-name" style="display:none;">
                     <input type="text" value="${territory.name}" class="edit-name-input" maxlength="15">
                     <button class="save-btn" onclick="saveTerritoryName('${territory.id}', this)">Guardar</button>
                     <button class="cancel-btn" onclick="cancelTerritoryEdit('${territory.id}', this)">Cancelar</button>
                 </div>
                 <div class="territory-actions">
-                    <button class="edit-btn" onclick="editTerritoryName('${territory.id}', this)">Editar Nombre</button>
-                    <button class="add-graffiti-btn" ${territory.graffitis.length >= 3 ? 'disabled' : ''} onclick="addGraffiti('${territory.id}')">Agregar Grafiti</button>
-                    <button class="delete-btn" onclick="deleteTerritory('${territory.id}')">Eliminar Territorio</button>
+                    <button class="add-graffiti-btn" ${territory.graffitis.length >= 3 ? 'disabled' : ''} onclick="addGraffiti('${territory.id}')">
+                        Agregar Grafiti
+                    </button>
+                    <button class="edit-btn" onclick="editTerritoryName('${territory.id}', this)" title="Editar Nombre">
+                        <i class="fa-solid fa-pencil"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteTerritory('${territory.id}')" title="Eliminar Territorio">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             </div>
             <ul class="territory-graffiti-list" id="graffitiList-${territory.id}"></ul>
@@ -112,21 +170,23 @@ async function renderTerritories() {
         territoriesListDiv.appendChild(territoryDiv);
         renderGraffitis(territory.id, territory.graffitis);
     });
-    updateCountdowns(); // Actualizar cuenta regresiva después de renderizar
+    updateCountdowns();
+    updateSidebarStats();
+    updateUpcomingGraffitis();
 }
 
 function renderGraffitis(territoryId, graffitisData) {
     const graffitiList = document.getElementById(`graffitiList-${territoryId}`);
-    if (!graffitiList) return; // Asegurarse de que el elemento existe
+    if (!graffitiList) return;
     graffitiList.innerHTML = '';
 
-    graffitisData.forEach((graffiti) => { // Eliminado graffitiIndex
-        const startDate = new Date(graffiti.start_time); // Usar start_time de Supabase
-        const endDate = new Date(graffiti.end_time);     // Usar end_time de Supabase
+    graffitisData.forEach((graffiti) => {
+        const startDate = new Date(graffiti.start_time);
+        const endDate = new Date(graffiti.end_time);
 
         const graffitiItem = document.createElement('li');
         graffitiItem.className = 'graffiti-item';
-        graffitiItem.setAttribute('data-id', graffiti.id); // Identificador para el graffiti
+        graffitiItem.setAttribute('data-id', graffiti.id);
 
         graffitiItem.innerHTML = `
             <p><strong>Inicio:</strong> <span class="graffiti-start-display">${formatDateTime(startDate)}</span></p>
@@ -137,8 +197,12 @@ function renderGraffitis(territoryId, graffitisData) {
                 <input type="datetime-local" id="editStartTime-${territoryId}-${graffiti.id}" value="${formatDateTimeLocal(startDate)}">
             </div>
             <div class="graffiti-actions" id="graffiti-actions-${territoryId}-${graffiti.id}">
-                <button class="edit-btn" onclick="editGraffitiStartTime('${territoryId}', '${graffiti.id}', this)">Modificar</button>
-                <button class="delete-btn" onclick="deleteGraffiti('${territoryId}', '${graffiti.id}')">Eliminar</button>
+                <button class="edit-btn" onclick="editGraffitiStartTime('${territoryId}', '${graffiti.id}', this)" title="Modificar">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button class="delete-btn" onclick="deleteGraffiti('${territoryId}', '${graffiti.id}')" title="Eliminar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             <div class="edit-graffiti-actions" id="edit-graffiti-actions-${territoryId}-${graffiti.id}" style="display:none;">
                 <button class="save-btn" onclick="saveGraffitiStartTime('${territoryId}', '${graffiti.id}', this)">Guardar</button>
@@ -148,7 +212,6 @@ function renderGraffitis(territoryId, graffitisData) {
         graffitiList.appendChild(graffitiItem);
     });
 
-    // Habilitar/deshabilitar botón de agregar graffiti
     const territoryDiv = territoriesListDiv.querySelector(`.territory-item[data-id="${territoryId}"]`);
     const addGraffitiBtn = territoryDiv ? territoryDiv.querySelector('.add-graffiti-btn') : null;
     if (addGraffitiBtn) {
@@ -164,30 +227,25 @@ async function addTerritory() {
     const newTerritoryNameInput = document.getElementById('newTerritoryName');
     const name = newTerritoryNameInput.value.trim();
     if (name) {
-        console.log("Intentando agregar territorio:", name);
         if (!supabase) {
-            console.error("Supabase client not initialized. Cannot add territory.");
             alert('Error: Supabase no está inicializado.');
             return;
         }
         const { data, error } = await supabase
             .from('territories')
             .insert([{ name: name }])
-            .select(); // Retornar el territorio recién creado
+            .select();
 
         if (error) {
-            console.error('Error adding territory:', error.message);
             alert('Error al agregar territorio: ' + error.message);
-            // Si el error es por nombre duplicado, informar al usuario
-            if (error.code === '23505') { // Código de error para unique_violation
+            if (error.code === '23505') {
                 alert('Ya existe un territorio con ese nombre. Por favor, elige otro.');
             }
             return;
         }
 
-        console.log("Territorio agregado con éxito:", data);
         newTerritoryNameInput.value = '';
-        await renderTerritories(); // Volver a renderizar para mostrar el nuevo territorio
+        await renderTerritories();
     } else {
         alert('Por favor, ingresa un nombre para el territorio.');
     }
@@ -199,7 +257,6 @@ async function deleteTerritory(territoryId) {
 
     if (confirm(`¿Estás seguro de que quieres eliminar el territorio "${territoryToDelete.name}" y todos sus grafitis?`)) {
         if (!supabase) {
-            console.error("Supabase client not initialized. Cannot delete territory.");
             alert('Error: Supabase no está inicializado.');
             return;
         }
@@ -209,12 +266,11 @@ async function deleteTerritory(territoryId) {
             .eq('id', territoryId);
 
         if (error) {
-            console.error('Error deleting territory:', error.message);
             alert('Error al eliminar territorio: ' + error.message);
             return;
         }
 
-        await renderTerritories(); // Volver a renderizar para actualizar la lista
+        await renderTerritories();
     }
 }
 
@@ -228,7 +284,6 @@ function editTerritoryName(territoryId, button) {
     territoryDiv.querySelector('.territory-actions').style.display = 'none';
     editNameDiv.style.display = 'flex';
 
-    // Encontrar el nombre actual del territorio en el array local (ya cargado de Supabase)
     const currentTerritory = territories.find(t => t.id === territoryId);
     if (currentTerritory) {
         editNameInput.value = currentTerritory.name;
@@ -243,7 +298,6 @@ async function saveTerritoryName(territoryId, button) {
 
     if (newName) {
         if (!supabase) {
-            console.error("Supabase client not initialized. Cannot save territory name.");
             alert('Error: Supabase no está inicializado.');
             return;
         }
@@ -253,14 +307,13 @@ async function saveTerritoryName(territoryId, button) {
             .eq('id', territoryId);
 
         if (error) {
-            console.error('Error updating territory name:', error.message);
             alert('Error al actualizar nombre del territorio: ' + error.message);
-            if (error.code === '23505') { // Código de error para unique_violation
+            if (error.code === '23505') {
                 alert('Ya existe un territorio con ese nombre. Por favor, elige otro.');
             }
             return;
         }
-        await renderTerritories(); // Volver a renderizar para actualizar todo
+        await renderTerritories();
     } else {
         alert('El nombre del territorio no puede estar vacío.');
     }
@@ -281,9 +334,9 @@ async function addGraffiti(territoryId) {
     if (!currentTerritory) return;
 
     if (currentTerritory.graffitis.length < 3) {
-        const durationHours = parseInt(graffitiDurationInput.value);
+        const durationHours = globalGraffitiDuration;
         if (isNaN(durationHours) || durationHours <= 0) {
-            alert('Por favor, ingresa una duración válida (en horas) para el grafiti.');
+            alert('La duración del grafiti no es válida. Por favor, corrígela en la configuración global.');
             return;
         }
 
@@ -291,7 +344,6 @@ async function addGraffiti(territoryId) {
         const endTime = new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
 
         if (!supabase) {
-            console.error("Supabase client not initialized. Cannot add graffiti.");
             alert('Error: Supabase no está inicializado.');
             return;
         }
@@ -299,17 +351,16 @@ async function addGraffiti(territoryId) {
             .from('graffitis')
             .insert([{
                 territory_id: territoryId,
-                start_time: startTime.toISOString(), // Guardar en formato ISO
-                end_time: endTime.toISOString()      // Guardar en formato ISO
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString()
             }])
             .select();
 
         if (error) {
-            console.error('Error adding graffiti:', error.message);
             alert('Error al agregar grafiti: ' + error.message);
             return;
         }
-        await renderTerritories(); // Volver a renderizar para actualizar los grafitis
+        await renderTerritories();
     } else {
         alert('Este territorio ya tiene el máximo de 3 grafitis activos.');
     }
@@ -318,7 +369,6 @@ async function addGraffiti(territoryId) {
 async function deleteGraffiti(territoryId, graffitiId) {
     if (confirm('¿Estás seguro de que quieres eliminar este grafiti?')) {
         if (!supabase) {
-            console.error("Supabase client not initialized. Cannot delete graffiti.");
             alert('Error: Supabase no está inicializado.');
             return;
         }
@@ -328,11 +378,10 @@ async function deleteGraffiti(territoryId, graffitiId) {
             .eq('id', graffitiId);
 
         if (error) {
-            console.error('Error deleting graffiti:', error.message);
             alert('Error al eliminar grafiti: ' + error.message);
             return;
         }
-        await renderTerritories(); // Volver a renderizar para actualizar los grafitis
+        await renderTerritories();
     }
 }
 
@@ -349,7 +398,6 @@ function editGraffitiStartTime(territoryId, graffitiId, button) {
     editStartTimeWrapper.style.display = 'block';
     editGraffitiActions.style.display = 'flex';
 
-    // Cargar el valor actual del graffiti desde el estado local para el input de edición
     const currentTerritory = territories.find(t => t.id === territoryId);
     const currentGraffiti = currentTerritory ? currentTerritory.graffitis.find(g => g.id === graffitiId) : null;
     if (currentGraffiti) {
@@ -367,7 +415,7 @@ async function saveGraffitiStartTime(territoryId, graffitiId, button) {
         return;
     }
 
-    const durationHours = parseInt(graffitiDurationInput.value);
+    const durationHours = globalGraffitiDuration;
     if (isNaN(durationHours) || durationHours <= 0) {
         alert('La duración del grafiti no es válida. Por favor, corrígela en la configuración global.');
         return;
@@ -377,7 +425,6 @@ async function saveGraffitiStartTime(territoryId, graffitiId, button) {
     const newEndTime = new Date(newStartDate.getTime() + durationHours * 60 * 60 * 1000);
 
     if (!supabase) {
-        console.error("Supabase client not initialized. Cannot save graffiti start time.");
         alert('Error: Supabase no está inicializado.');
         return;
     }
@@ -390,11 +437,10 @@ async function saveGraffitiStartTime(territoryId, graffitiId, button) {
         .eq('id', graffitiId);
 
     if (error) {
-        console.error('Error updating graffiti start time:', error.message);
         alert('Error al actualizar hora de inicio del grafiti: ' + error.message);
         return;
     }
-    await renderTerritories(); // Volver a renderizar para actualizar los grafitis
+    await renderTerritories();
 }
 
 function cancelGraffitiEdit(territoryId, graffitiId, button) {
@@ -411,29 +457,41 @@ function cancelGraffitiEdit(territoryId, graffitiId, button) {
 }
 
 async function updateAllGraffitiEndTimes() {
-    const durationHours = parseInt(graffitiDurationInput.value);
-    if (isNaN(durationHours) || durationHours <= 0) {
+    const input = document.getElementById('graffitiDuration');
+    const newDuration = parseInt(input ? input.value : globalGraffitiDuration);
+
+    if (isNaN(newDuration) || newDuration <= 0) {
+        alert('Por favor, ingresa una duración válida (en horas).');
+        if (input) input.value = globalGraffitiDuration;
         return;
     }
 
-    // Recorre todos los territorios y grafitis localmente para recalcular y luego hacer un batch update
+    if (newDuration !== globalGraffitiDuration) {
+        globalGraffitiDuration = newDuration;
+
+        const saveResult = await saveGlobalGraffitiDuration(globalGraffitiDuration);
+        if (!saveResult.success) {
+            console.error('No se pudo guardar la duración global:', saveResult.error);
+            alert('Error al guardar la duración global en la base de datos. Revisa la consola para más detalles.');
+            const inputEl = document.getElementById('graffitiDuration');
+            if (inputEl) inputEl.value = globalGraffitiDuration;
+            return;
+        }
+    }
+
     const updates = [];
     territories.forEach(territory => {
         territory.graffitis.forEach(graffiti => {
             const startTime = new Date(graffiti.start_time);
-            const newEndTime = new Date(startTime.getTime() + durationHours * 60 * 60 * 1000).toISOString();
-            if (graffiti.end_time !== newEndTime) { // Solo si realmente cambió
-                updates.push({
-                    id: graffiti.id,
-                    end_time: newEndTime
-                });
+            const newEndTime = new Date(startTime.getTime() + globalGraffitiDuration * 60 * 60 * 1000).toISOString();
+            if (graffiti.end_time !== newEndTime) {
+                updates.push({ id: graffiti.id, end_time: newEndTime });
             }
         });
     });
 
     if (updates.length > 0) {
         if (!supabase) {
-            console.error("Supabase client not initialized. Cannot update graffiti end times.");
             alert('Error: Supabase no está inicializado.');
             return;
         }
@@ -444,92 +502,329 @@ async function updateAllGraffitiEndTimes() {
                 .eq('id', updateItem.id);
 
             if (error) {
-                console.error('Error updating graffiti end time:', error.message);
-                // No mostrar alerta para cada error individual, quizás un log o un mensaje general
+                console.error(`Error updating graffiti ${updateItem.id}:`, error.message || error);
             }
         }
     }
-    await renderTerritories(); // Volver a renderizar para mostrar las nuevas horas de fin
+
+    await renderTerritories();
 }
 
 
 function updateCountdowns() {
-    territories.forEach((territory) => {
-        territory.graffitis.forEach((graffiti) => {
-            const countdownElement = document.getElementById(`countdown-${territory.id}-${graffiti.id}`);
-            // Asegurarse de seleccionar el elemento de display de fin correcto
-            const graffitiItemDiv = document.querySelector(`.graffiti-item[data-id="${graffiti.id}"]`);
-            const endTimeDisplayElement = graffitiItemDiv ? graffitiItemDiv.querySelector('.graffiti-end-display') : null;
+    if (territoriesListDiv && territoriesListDiv.offsetParent !== null) {
+        territories.forEach((territory) => {
+            territory.graffitis.forEach((graffiti) => {
+                const countdownElement = document.getElementById(`countdown-${territory.id}-${graffiti.id}`);
+                const graffitiItemDiv = document.querySelector(`.graffiti-item[data-id="${graffiti.id}"]`);
+                const endTimeDisplayElement = graffitiItemDiv ? graffitiItemDiv.querySelector('.graffiti-end-display') : null;
+
+                if (!countdownElement || !graffitiItemDiv || !endTimeDisplayElement) return;
+
+                const endTime = new Date(graffiti.end_time);
+                const now = getArgentineTime();
+                const timeLeft = endTime.getTime() - now.getTime();
+
+                endTimeDisplayElement.textContent = formatDateTime(endTime);
+
+                if (timeLeft <= 0) {
+                    countdownElement.textContent = '¡Tiempo agotado!';
+                    countdownElement.classList.add('red');
+                    graffitiItemDiv.style.backgroundColor = '#5C1C1C';
+                    graffitiItemDiv.style.borderColor = 'var(--danger-color)';
+                    return;
+                } else {
+                    graffitiItemDiv.style.backgroundColor = '';
+                    graffitiItemDiv.style.borderColor = '';
+                }
+
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                countdownElement.textContent = `Faltan: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+                if (timeLeft < (24 * 60 * 60 * 1000)) {
+                    countdownElement.classList.add('red');
+                } else {
+                    countdownElement.classList.remove('red');
+                }
+            });
+        });
+    }
+}
 
 
-            if (!countdownElement || !endTimeDisplayElement) return;
+function updateCurrentDateTime() {
+    if (currentDateTimeSpan && currentDateTimeSpan.offsetParent !== null) {
+        const now = getArgentineTime();
+        currentDateTimeSpan.textContent = `Hora de Argentina: ${formatDateTime(now)}`;
+    }
+}
 
+
+function updateSidebarStats() {
+    if (!sidebarContainer || sidebarContainer.offsetParent === null) return;
+
+    let activeTerritories = new Set();
+    let activeGraffitis = 0;
+    let expiredGraffitis = 0;
+    const now = getArgentineTime();
+
+    territories.forEach(territory => {
+        let territoryHasActiveGraffiti = false;
+        territory.graffitis.forEach(graffiti => {
             const endTime = new Date(graffiti.end_time);
-            const now = getArgentineTime();
-            const timeLeft = endTime.getTime() - now.getTime();
-
-            // Actualizar el texto de fin si la duración global cambió (ya se hace en renderTerritories)
-            endTimeDisplayElement.textContent = formatDateTime(endTime);
-
-            if (timeLeft <= 0) {
-                countdownElement.textContent = '¡Tiempo agotado!';
-                countdownElement.classList.add('red'); // Expiró el contador
-                document.body.classList.add('red');
-                return;
-            }
-
-            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-            countdownElement.textContent = `Faltan: ${days}d ${hours}h ${minutes}m ${seconds}s`;
-
-            if (timeLeft < (24 * 60 * 60 * 1000)) { // Menos de 24 horas
-                countdownElement.classList.add('red');
+            if (endTime.getTime() > now.getTime()) {
+                activeGraffitis++;
+                territoryHasActiveGraffiti = true;
             } else {
-                countdownElement.classList.remove('red');
+                expiredGraffitis++;
+            }
+        });
+        if (territoryHasActiveGraffiti) {
+            activeTerritories.add(territory.id);
+        }
+    });
+
+    activeTerritoriesCountSpan.textContent = activeTerritories.size;
+    activeGraffitisCountSpan.textContent = activeGraffitis;
+    expiredGraffitisCountSpan.textContent = expiredGraffitis;
+}
+
+function updateUpcomingGraffitis() {
+    if (!sidebarContainer || sidebarContainer.offsetParent === null) return;
+
+    upcomingGraffitisListUl.innerHTML = '';
+    const now = getArgentineTime();
+    const allGraffitis = [];
+
+    territories.forEach(territory => {
+        territory.graffitis.forEach(graffiti => {
+            const endTime = new Date(graffiti.end_time);
+            if (endTime.getTime() > now.getTime()) {
+                allGraffitis.push({
+                    territoryName: territory.name,
+                    endTime: endTime,
+                    graffitiId: graffiti.id
+                });
             }
         });
     });
+
+    allGraffitis.sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
+
+    allGraffitis.slice(0, 5).forEach(g => {
+        const timeLeft = g.endTime.getTime() - now.getTime();
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        
+        const listItem = document.createElement('li');
+        listItem.className = 'upcoming-graffiti-item';
+        listItem.innerHTML = `
+            <strong>${g.territoryName}:</strong> ${days}d ${hours}h ${minutes}m
+        `;
+        upcomingGraffitisListUl.appendChild(listItem);
+    });
+
+    if (allGraffitis.length === 0) {
+        const listItem = document.createElement('li');
+        listItem.textContent = 'No hay grafitis próximos a vencer.';
+        upcomingGraffitisListUl.appendChild(listItem);
+    }
 }
 
-function updateCurrentDateTime() {
-    const now = getArgentineTime();
-    currentDateTimeSpan.textContent = `Hora de Argentina: ${formatDateTime(now)}`;
+function copyUpcomingGraffitisToClipboard() {
+    let textToCopy = "Próximos grafitis a vencer (CMK):\n\n";
+    const upcomingItems = upcomingGraffitisListUl.querySelectorAll('.upcoming-graffiti-item');
+
+    if (upcomingItems.length === 0 || (upcomingItems.length === 1 && upcomingItems[0].textContent === 'No hay grafitis próximos a vencer.')) {
+        textToCopy = "No hay grafitis próximos a vencer actualmente.";
+    } else {
+        upcomingItems.forEach(item => {
+            textToCopy += `- ${item.textContent.replace(':', ' vence en:')}\n`;
+        });
+    }
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('Lista de próximos grafitis copiada al portapapeles.');
+    }).catch(err => {
+        console.error('Error al copiar al portapapeles:', err);
+        alert('Error al copiar la lista.');
+    });
 }
 
 
-// --- Función Principal de Inicialización de la Aplicación ---
+async function fetchChatMessages() {
+    if (!supabase) {
+        return [];
+    }
+
+    const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        console.error('Error fetching chat messages:', error.message);
+        return [];
+    }
+
+    return data.reverse();
+}
+
+function renderChatMessages(messages) {
+    chatMessagesDiv.innerHTML = '';
+    messages.forEach(msg => {
+        const messageItem = document.createElement('div');
+        messageItem.className = 'chat-message-item';
+        const formattedTime = formatDateTime(new Date(msg.created_at));
+        messageItem.innerHTML = `
+            <span class="message-meta"><strong>${msg.user_name}</strong> - ${formattedTime}</span>
+            <span class="message-text">${msg.message_content}</span>
+        `;
+        chatMessagesDiv.appendChild(messageItem);
+    });
+    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const userName = chatUserNameInput.value.trim();
+    const messageContent = chatMessageInput.value.trim();
+
+    if (!userName || !messageContent) {
+        alert('Por favor, ingresa tu nombre y un mensaje.');
+        return;
+    }
+
+    if (!supabase) {
+        alert('Error: Supabase no está inicializado.');
+        return;
+    }
+
+    const { data, error } = await supabase
+        .from('chat_messages')
+        .insert([
+            { user_name: userName, message_content: messageContent }
+        ])
+        .select();
+
+    if (error) {
+        alert('Error al enviar mensaje: ' + error.message);
+        return;
+    }
+
+    chatMessageInput.value = '';
+    await refreshChat();
+}
+
+async function refreshChat() {
+    const messages = await fetchChatMessages();
+    renderChatMessages(messages);
+}
+
+async function cleanOldChatMessages() {
+    if (!supabase) {
+        return;
+    }
+
+    const { count, error } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact' });
+
+    if (error) {
+        console.error('Error counting chat messages:', error.message);
+        return;
+    }
+
+    if (count > 50) {
+        const { data: latestMessages, error: fetchError } = await supabase
+            .from('chat_messages')
+            .select('id')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (fetchError) {
+            console.error('Error fetching latest chat messages:', fetchError.message);
+            return;
+        }
+
+        const latestIds = latestMessages.map(msg => msg.id);
+
+        const { error: deleteError } = await supabase
+            .from('chat_messages')
+            .delete()
+            .not('id', 'in', `(${latestIds.join(',')})`);
+
+        if (deleteError) {
+            console.error('Error deleting old chat messages:', deleteError.message);
+        } else {
+            console.log(`Cleaned ${count - 50} old chat messages.`);
+        }
+    }
+}
+
+
 async function initializeApp() {
-    console.log("Initializing CMK Territories App...");
-
-    // ¡Mueve la inicialización de Supabase AQUÍ!
-    // Esto asegura que la librería Supabase ya esté cargada y disponible
-	if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
   	  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  	  console.log("✅ Supabase client initialized correctamente.");
 	} else {
-  	  console.error("❌ Supabase library not loaded. Cannot initialize client.");
   	  alert("Error: La librería de Supabase no se ha cargado correctamente. Intenta recargar la página.");
   	  return;
-}
+    }
 
 
+    await fetchGlobalGraffitiDuration();
     await renderTerritories();
     updateCountdowns();
     updateCurrentDateTime();
+    updateSidebarStats();
+    updateUpcomingGraffitis();
 
-    setInterval(updateCountdowns, 1000);
-    setInterval(updateCurrentDateTime, 1000);
+    await refreshChat();
+    const storedUserName = localStorage.getItem('cmk_chat_user_name');
+    if (storedUserName) {
+        chatUserNameInput.value = storedUserName;
+    }
+
+    sendChatMessageBtn.addEventListener('click', sendChatMessage);
+    chatMessageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+        }
+    });
+    chatUserNameInput.addEventListener('change', (e) => {
+        localStorage.setItem('cmk_chat_user_name', e.target.value.trim());
+    });
+
+    if (!window.countdownInterval) {
+        window.countdownInterval = setInterval(updateCountdowns, 1000);
+    }
+    if (!window.dateTimeInterval) {
+        window.dateTimeInterval = setInterval(updateCurrentDateTime, 1000);
+    }
+
+    if (!window.sidebarUpdateInterval) {
+        window.sidebarUpdateInterval = setInterval(() => {
+            updateSidebarStats();
+            updateUpcomingGraffitis();
+        }, 10000);
+    }
+
+    if (!window.chatUpdateInterval) {
+        window.chatUpdateInterval = setInterval(async () => {
+            await refreshChat();
+            await cleanOldChatMessages();
+        }, 30000);
+    }
 
     graffitiDurationInput.addEventListener('change', updateAllGraffitiEndTimes);
-    console.log("App initialized.");
+    
+    copyUpcomingBtn.addEventListener('click', copyUpcomingGraffitisToClipboard);
 }
 
-
-
-// --- Evento DOMContentLoaded ---
-// Esto asegura que initializeApp() se llama solo después de que todo el HTML
-// y los scripts de CDN (como Supabase) se hayan cargado.
-document.addEventListener('DOMContentLoaded', initializeApp);
+window.initializeApp = initializeApp;
