@@ -28,6 +28,7 @@ body {
     background-color: var(--bg-dark);
     margin: 0;
     padding: 20px;
+    zoom: 80%;
     color: var(--text-light);
     line-height: 1.6;
     min-height: 100vh;
@@ -500,8 +501,9 @@ button:disabled {
     gap: 15px;
     min-width: 250px;
     max-width: 350px;
-    grid-column: 1; 
-    grid-row: 1 / span 1; 
+    grid-column: 1;
+    /* CAMBIO 1: Haz que el contenedor ocupe todo el alto disponible en su columna del grid */
+    grid-row: 1 / -1; /* Esto hace que se extienda desde la línea 1 hasta la última línea del grid */
 }
 
 .chat-container h2 {
@@ -514,15 +516,17 @@ button:disabled {
 }
 
 .chat-messages {
-    flex-grow: 1; 
+    flex-grow: 1;
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     padding: 10px;
-    overflow-y: auto; 
-    max-height: 500px; 
+    overflow-y: auto;
+    max-height: 600px; <--- ELIMINADO/COMENTADO */
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     gap: 8px;
+    /* Opcional: Asegurar que el elemento no tenga una altura mínima que impida que flex-grow funcione correctamente */
+    min-height: 0;
 }
 
 .chat-message-item {
@@ -535,7 +539,7 @@ button:disabled {
 }
 
 .chat-message-item .message-meta {
-    font-size: 0.75em;
+    font-size: 0.95em;
     color: var(--secondary-color);
     margin-bottom: 4px;
     display: block;
@@ -543,6 +547,29 @@ button:disabled {
 
 .chat-message-item .message-text {
     color: var(--text-light);
+    font-weight: 700;
+}
+
+.chat-message-item.greppivg {
+    background-color: var(--warning-color); 
+    border-color: var(--warning-color);
+}
+
+.chat-message-item.greppivg .message-meta {
+    /* Este estilo aplicará al span completo .message-meta */
+    color: var(--bg-dark); /* Esto cambiará el color de todo el texto dentro de message-meta */
+    font-size: 1.05em; /* Puedes ajustar el tamaño si quieres que toda la línea sea más grande */
+}
+
+.chat-message-item.greppivg .message-meta strong {
+    /* Aquí puedes sobrescribir el color específico para el nombre si quieres un tono diferente */
+    color: var(--bg-dark); /* Mantengo el mismo color para el nombre por simplicidad, puedes cambiarlo */
+    font-size: 1.1em; /* Un poco más grande para el nombre */
+}
+
+.chat-message-item.greppivg .message-text {
+    color: var(--bg-dark); /* Color del texto del mensaje resaltado */
+    font-weight: 700;
 }
 
 .chat-input-group {

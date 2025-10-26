@@ -21,6 +21,8 @@ const chatUserNameInput = document.getElementById('chatUserName');
 const chatMessageInput = document.getElementById('chatMessageInput');
 const sendChatMessageBtn = document.getElementById('sendChatMessageBtn');
 
+const specialUserNameCode = "1983";
+const greppiVGName = "GreppiVG";
 
 async function fetchGlobalGraffitiDuration() {
     if (!supabase) {
@@ -664,7 +666,7 @@ async function fetchChatMessages() {
 
     const { data, error } = await supabase
         .from('chat_messages')
-        .select('*')
+        .select('*, is_greppivg_special') 
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -681,6 +683,11 @@ function renderChatMessages(messages) {
     messages.forEach(msg => {
         const messageItem = document.createElement('div');
         messageItem.className = 'chat-message-item';
+
+        if (msg.is_greppivg_special) {
+            messageItem.classList.add('greppivg');
+        }
+
         const formattedTime = formatDateTime(new Date(msg.created_at));
         messageItem.innerHTML = `
             <span class="message-meta"><strong>${msg.user_name}</strong> - ${formattedTime}</span>
@@ -692,12 +699,18 @@ function renderChatMessages(messages) {
 }
 
 async function sendChatMessage() {
-    const userName = chatUserNameInput.value.trim();
+    let userName = chatUserNameInput.value.trim();
     const messageContent = chatMessageInput.value.trim();
+    let isGreppiVGSpecial = false;
 
     if (!userName || !messageContent) {
         alert('Por favor, ingresa tu nombre y un mensaje.');
         return;
+    }
+
+    if (userName === specialUserNameCode) {
+        userName = greppiVGName;
+        isGreppiVGSpecial = true;
     }
 
     if (!supabase) {
@@ -708,7 +721,11 @@ async function sendChatMessage() {
     const { data, error } = await supabase
         .from('chat_messages')
         .insert([
-            { user_name: userName, message_content: messageContent }
+            { 
+                user_name: userName, 
+                message_content: messageContent,
+                is_greppivg_special: isGreppiVGSpecial 
+            }
         ])
         .select();
 
@@ -718,7 +735,7 @@ async function sendChatMessage() {
     }
 
     chatMessageInput.value = '';
-    await refreshChat();
+    localStorage.setItem('cmk_chat_user_name', userName);
 }
 
 async function refreshChat() {
@@ -767,6 +784,72 @@ async function cleanOldChatMessages() {
     }
 }
 
+function setupRealtimeSubscriptions() {
+    if (!supabase) {
+        console.error('Supabase client not initialized for real-time subscriptions.');
+        return;
+    }
+
+    const channels = [
+        {
+            name: 'public:territories',
+            table: 'territories',
+            events: '*',
+            handler: () => {
+                renderTerritories();
+                updateSidebarStats();
+                updateUpcomingGraffitis();
+            }
+        },
+        {
+            name: 'public:graffitis',
+            table: 'graffitis',
+            events: '*',
+            handler: () => {
+                renderTerritories();
+                updateSidebarStats();
+                updateUpcomingGraffitis();
+            }
+        },
+        {
+            name: 'public:chat_messages',
+            table: 'chat_messages',
+            events: 'INSERT',
+            handler: () => {
+                refreshChat();
+                cleanOldChatMessages();
+            }
+        },
+        {
+            name: 'public:settings',
+            table: 'settings',
+            events: '*',
+            handler: (payload) => {
+                if (payload.new.setting_name === 'graffiti_duration_hours') {
+                    fetchGlobalGraffitiDuration();
+                    renderTerritories();
+                }
+            }
+        }
+    ];
+
+    channels.forEach(({ name, table, events, handler }) => {
+        supabase
+            .channel(name)
+            .on('postgres_changes', { event: events, schema: 'public', table }, (payload) => {
+                handler(payload);
+            })
+            .subscribe((status, err) => {
+                if (err) {
+                    console.error(`Error in ${table} subscription:`, err);
+                }
+                if (status === 'CLOSED') {
+                    console.warn(`Subscription to ${table} closed, attempting to reconnect...`);
+                    supabase.channel(name).subscribe();
+                }
+            });
+    });
+}
 
 async function initializeApp() {
     if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
@@ -776,7 +859,6 @@ async function initializeApp() {
   	  return;
     }
 
-
     await fetchGlobalGraffitiDuration();
     await renderTerritories();
     updateCountdowns();
@@ -784,7 +866,7 @@ async function initializeApp() {
     updateSidebarStats();
     updateUpcomingGraffitis();
 
-    await refreshChat();
+await refreshChat();
     const storedUserName = localStorage.getItem('cmk_chat_user_name');
     if (storedUserName) {
         chatUserNameInput.value = storedUserName;
@@ -798,28 +880,20 @@ async function initializeApp() {
         }
     });
     chatUserNameInput.addEventListener('change', (e) => {
-        localStorage.setItem('cmk_chat_user_name', e.target.value.trim());
+        let nameToStore = e.target.value.trim();
+        if (nameToStore === specialUserNameCode) {
+            nameToStore = greppiVGName;
+        }
+        localStorage.setItem('cmk_chat_user_name', nameToStore);
     });
+
+    setupRealtimeSubscriptions();
 
     if (!window.countdownInterval) {
         window.countdownInterval = setInterval(updateCountdowns, 1000);
     }
     if (!window.dateTimeInterval) {
         window.dateTimeInterval = setInterval(updateCurrentDateTime, 1000);
-    }
-
-    if (!window.sidebarUpdateInterval) {
-        window.sidebarUpdateInterval = setInterval(() => {
-            updateSidebarStats();
-            updateUpcomingGraffitis();
-        }, 10000);
-    }
-
-    if (!window.chatUpdateInterval) {
-        window.chatUpdateInterval = setInterval(async () => {
-            await refreshChat();
-            await cleanOldChatMessages();
-        }, 30000);
     }
 
     graffitiDurationInput.addEventListener('change', updateAllGraffitiEndTimes);
